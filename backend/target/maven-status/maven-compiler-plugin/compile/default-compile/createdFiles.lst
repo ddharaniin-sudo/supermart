@@ -1,0 +1,14 @@
+com\supermarket\config\SecurityConfig.class
+com\supermarket\controller\AuthController.class
+com\supermarket\controller\AuthController$RegisterRequest.class
+com\supermarket\repository\UserRepository.class
+com\supermarket\SupermarketBackendApplication.class
+com\supermarket\repository\ProductRepository.class
+com\supermarket\controller\AuthController$LoginRequest.class
+com\supermarket\model\User.class
+com\supermarket\controller\ProductController$ProductRequest.class
+com\supermarket\model\Role.class
+com\supermarket\controller\AdminController.class
+com\supermarket\controller\AdminController$AdminRequest.class
+com\supermarket\model\Product.class
+com\supermarket\controller\ProductController.class
