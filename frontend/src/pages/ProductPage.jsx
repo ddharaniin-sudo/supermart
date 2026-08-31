@@ -105,6 +105,10 @@ export default function ProductPage() {
             }
             alt={product.name}
             style={{ objectFit: "contain", maxHeight: "360px" }}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80";
+            }}
           />
         </div>
 
@@ -249,8 +253,12 @@ export default function ProductPage() {
               <div className="smart-img-wrap">
                 <img
                   className="smart-img"
-                  src={item.imageUrl}
+                  src={item.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80"}
                   alt={item.name}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+                  }}
                 />
               </div>
 

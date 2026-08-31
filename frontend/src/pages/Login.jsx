@@ -22,9 +22,17 @@ export default function Login() {
       window.dispatchEvent(new Event("user-updated"));
       showToast(`Welcome back, ${user.name || user.email}! 👋`);
 
-      if (user.role === "ADMIN") navigate("/admin");
-      else if (user.role === "SELLER") navigate("/seller");
-      else navigate("/");
+      const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+
+      if (redirectParam) {
+        navigate(redirectParam);
+      } else if (user.role === "ADMIN") {
+        navigate("/admin");
+      } else if (user.role === "SELLER") {
+        navigate("/seller");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       setMessage(error.response?.data?.message || "Invalid email or password. Please try again.");
     } finally {

@@ -70,6 +70,13 @@ export default function Navbar() {
               🥦 All Products
             </Link>
 
+            <Link
+              className={`nav-link ${location.pathname.startsWith("/order") ? "active" : ""}`}
+              to="/orders"
+            >
+              📦 My Orders
+            </Link>
+
             <Link className="nav-cart-btn" to="/cart">
               <span>🛍️ Basket</span>
               <span className={`cart-badge ${bouncing ? "bounce" : ""}`}>

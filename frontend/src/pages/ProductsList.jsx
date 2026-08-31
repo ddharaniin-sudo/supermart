@@ -4,24 +4,39 @@ import api from "../api";
 import { showToast } from "../components/Toast";
 import { defaultSupermarketProducts } from "./Home";
 
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+
 const categories = [
   { label: "All Categories", value: "ALL", icon: "🛒" },
   { label: "Vegetables", value: "Vegetables", icon: "🥦" },
   { label: "Fruits", value: "Fruits", icon: "🍎" },
   { label: "Dairy", value: "Dairy", icon: "🥛" },
   { label: "Bakery", value: "Bakery", icon: "🍞" },
-  { label: "Snacks", value: "Snacks", icon: "🍿" }
+  { label: "Snacks", value: "Snacks", icon: "🍿" },
+  { label: "Beverages", value: "Beverages", icon: "🧃" },
+  { label: "Grains & Staples", value: "Grains", icon: "🌾" },
+  { label: "Spices & Oils", value: "Spices", icon: "🧂" }
 ];
 
 export default function ProductsList() {
   const [products, setProducts] = useState(defaultSupermarketProducts);
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedVariants, setSelectedVariants] = useState({});
-  const [sortBy, setSortBy] = useState("featured");
-  const [maxPrice, setMaxPrice] = useState(600);
-  const [vegOnly, setVegOnly] = useState(false);
-  const [onlyDeals, setOnlyDeals] = useState(false);
+
+  // Staged Filter States (edited by user in sidebar)
+  const [stagedCategory, setStagedCategory] = useState("ALL");
+  const [stagedSearch, setStagedSearch] = useState("");
+  const [stagedMaxPrice, setStagedMaxPrice] = useState(600);
+  const [stagedVegOnly, setStagedVegOnly] = useState(false);
+  const [stagedOnlyDeals, setStagedOnlyDeals] = useState(false);
+  const [stagedSortBy, setStagedSortBy] = useState("featured");
+
+  // Applied Filter States (drives the product list results)
+  const [appliedCategory, setAppliedCategory] = useState("ALL");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState(600);
+  const [appliedVegOnly, setAppliedVegOnly] = useState(false);
+  const [appliedOnlyDeals, setAppliedOnlyDeals] = useState(false);
+  const [appliedSortBy, setAppliedSortBy] = useState("featured");
 
   useEffect(() => {
     api
@@ -80,6 +95,36 @@ export default function ProductsList() {
     }));
   };
 
+  // Apply Staged Filters
+  const handleApplyFilters = () => {
+    setAppliedCategory(stagedCategory);
+    setAppliedSearch(stagedSearch);
+    setAppliedMaxPrice(stagedMaxPrice);
+    setAppliedVegOnly(stagedVegOnly);
+    setAppliedOnlyDeals(stagedOnlyDeals);
+    setAppliedSortBy(stagedSortBy);
+    showToast("Filters applied successfully! 🔍");
+  };
+
+  // Reset all filters immediately
+  const handleResetFilters = () => {
+    setStagedCategory("ALL");
+    setStagedSearch("");
+    setStagedMaxPrice(600);
+    setStagedVegOnly(false);
+    setStagedOnlyDeals(false);
+    setStagedSortBy("featured");
+
+    setAppliedCategory("ALL");
+    setAppliedSearch("");
+    setAppliedMaxPrice(600);
+    setAppliedVegOnly(false);
+    setAppliedOnlyDeals(false);
+    setAppliedSortBy("featured");
+
+    showToast("All filters have been reset! 🔄");
+  };
+
   function addToCart(product, selectedPack) {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const cartItemId = selectedPack ? `${product.id}-${selectedPack}` : product.id;
@@ -107,35 +152,43 @@ export default function ProductsList() {
     return products
       .filter((p) => {
         const matchesCat =
-          selectedCategory === "ALL" ||
-          p.category?.toLowerCase() === selectedCategory.toLowerCase();
+          appliedCategory === "ALL" ||
+          p.category?.toLowerCase() === appliedCategory.toLowerCase();
         const matchesSearch =
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.brand?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesPrice = Number(p.price) <= Number(maxPrice);
-        const matchesVeg = !vegOnly || p.isVeg;
-        const matchesDeals = !onlyDeals || p.hasSpecialOffer || p.discount;
+          p.name.toLowerCase().includes(appliedSearch.toLowerCase()) ||
+          p.category?.toLowerCase().includes(appliedSearch.toLowerCase()) ||
+          (p.brand && p.brand.toLowerCase().includes(appliedSearch.toLowerCase()));
+        const matchesPrice = Number(p.price) <= Number(appliedMaxPrice);
+        const matchesVeg = !appliedVegOnly || p.isVeg;
+        const matchesDeals = !appliedOnlyDeals || p.hasSpecialOffer || p.discount;
 
         return (
           matchesCat && matchesSearch && matchesPrice && matchesVeg && matchesDeals
         );
       })
       .sort((a, b) => {
-        if (sortBy === "price-low") return a.price - b.price;
-        if (sortBy === "price-high") return b.price - a.price;
-        if (sortBy === "name") return a.name.localeCompare(b.name);
+        if (appliedSortBy === "price-low") return a.price - b.price;
+        if (appliedSortBy === "price-high") return b.price - a.price;
+        if (appliedSortBy === "name") return a.name.localeCompare(b.name);
         return 0;
       });
   }, [
     products,
-    selectedCategory,
-    searchQuery,
-    maxPrice,
-    vegOnly,
-    onlyDeals,
-    sortBy
+    appliedCategory,
+    appliedSearch,
+    appliedMaxPrice,
+    appliedVegOnly,
+    appliedOnlyDeals,
+    appliedSortBy
   ]);
+
+  const hasPendingChanges =
+    stagedCategory !== appliedCategory ||
+    stagedSearch !== appliedSearch ||
+    stagedMaxPrice !== appliedMaxPrice ||
+    stagedVegOnly !== appliedVegOnly ||
+    stagedOnlyDeals !== appliedOnlyDeals ||
+    stagedSortBy !== appliedSortBy;
 
   return (
     <main className="container">
@@ -181,7 +234,7 @@ export default function ProductsList() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "260px 1fr",
+          gridTemplateColumns: "270px 1fr",
           gap: "28px",
           alignItems: "start"
         }}
@@ -210,23 +263,36 @@ export default function ProductsList() {
           >
             <h3 style={{ fontSize: "16px", fontWeight: 800 }}>🔍 Filter Products</h3>
             <button
+              type="button"
               style={{
                 background: "none",
                 border: "none",
-                color: "#10b981",
+                color: "#dc2626",
                 fontSize: "12px",
                 fontWeight: 700,
                 cursor: "pointer"
               }}
-              onClick={() => {
-                setSelectedCategory("ALL");
-                setSearchQuery("");
-                setMaxPrice(600);
-                setVegOnly(false);
-                setOnlyDeals(false);
-              }}
+              onClick={handleResetFilters}
             >
-              Reset All
+              🔄 Reset All
+            </button>
+          </div>
+
+          {/* Action Buttons: Apply & Reset */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
+            <button
+              type="button"
+              className="primary-btn"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "14px",
+                fontWeight: 700,
+                boxShadow: hasPendingChanges ? "0 0 12px rgba(16, 185, 129, 0.4)" : "none"
+              }}
+              onClick={handleApplyFilters}
+            >
+              ✨ Apply Filters {hasPendingChanges ? "•" : ""}
             </button>
           </div>
 
@@ -247,21 +313,21 @@ export default function ProductsList() {
                     padding: "8px 12px",
                     borderRadius: "8px",
                     border: "none",
-                    background: selectedCategory === cat.value ? "#d1fae5" : "transparent",
-                    color: selectedCategory === cat.value ? "#065f46" : "#475569",
-                    fontWeight: selectedCategory === cat.value ? 700 : 500,
+                    background: stagedCategory === cat.value ? "#d1fae5" : "transparent",
+                    color: stagedCategory === cat.value ? "#065f46" : "#475569",
+                    fontWeight: stagedCategory === cat.value ? 700 : 500,
                     fontSize: "13px",
                     cursor: "pointer",
                     textAlign: "left",
                     transition: "all 0.2s ease"
                   }}
-                  onClick={() => setSelectedCategory(cat.value)}
+                  onClick={() => setStagedCategory(cat.value)}
                 >
                   <span>
                     <span style={{ marginRight: "8px" }}>{cat.icon}</span>
                     {cat.label}
                   </span>
-                  {selectedCategory === cat.value && <span>✓</span>}
+                  {stagedCategory === cat.value && <span>✓</span>}
                 </button>
               ))}
             </div>
@@ -274,7 +340,7 @@ export default function ProductsList() {
                 Max Price
               </label>
               <span style={{ fontSize: "13px", fontWeight: 800, color: "#10b981" }}>
-                ₹{maxPrice}
+                ₹{stagedMaxPrice}
               </span>
             </div>
             <input
@@ -282,8 +348,8 @@ export default function ProductsList() {
               min="30"
               max="600"
               step="10"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
+              value={stagedMaxPrice}
+              onChange={(e) => setStagedMaxPrice(Number(e.target.value))}
               style={{ width: "100%", accentColor: "#10b981", cursor: "pointer" }}
             />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
@@ -297,8 +363,8 @@ export default function ProductsList() {
             <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: "#334155", cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={vegOnly}
-                onChange={(e) => setVegOnly(e.target.checked)}
+                checked={stagedVegOnly}
+                onChange={(e) => setStagedVegOnly(e.target.checked)}
                 style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
               />
               <span>🥦 100% Vegetarian Only</span>
@@ -307,12 +373,24 @@ export default function ProductsList() {
             <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: "#334155", cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={onlyDeals}
-                onChange={(e) => setOnlyDeals(e.target.checked)}
+                checked={stagedOnlyDeals}
+                onChange={(e) => setStagedOnlyDeals(e.target.checked)}
                 style={{ accentColor: "#10b981", width: "16px", height: "16px" }}
               />
               <span>🏷️ On Sale / Special Deals</span>
             </label>
+          </div>
+
+          {/* Bottom Apply Button */}
+          <div style={{ marginTop: "20px", paddingTop: "14px", borderTop: "1px solid #f1f5f9" }}>
+            <button
+              type="button"
+              className="primary-btn"
+              style={{ width: "100%", padding: "10px", fontSize: "13px" }}
+              onClick={handleApplyFilters}
+            >
+              Apply Filter Results →
+            </button>
           </div>
         </aside>
 
@@ -333,15 +411,29 @@ export default function ProductsList() {
               gap: "12px"
             }}
           >
-            <div className="nav-search" style={{ minWidth: "260px", flex: 1, maxWidth: "420px" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleApplyFilters();
+              }}
+              className="nav-search"
+              style={{ minWidth: "260px", flex: 1, maxWidth: "440px", display: "flex", alignItems: "center" }}
+            >
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Search coriander, potato, garlic, milk..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search coriander, potato, milk, almonds... (Press Enter)"
+                value={stagedSearch}
+                onChange={(e) => setStagedSearch(e.target.value)}
               />
-            </div>
+              <button
+                type="submit"
+                className="secondary-btn"
+                style={{ padding: "6px 12px", fontSize: "12px", marginLeft: "6px", whiteSpace: "nowrap" }}
+              >
+                Search
+              </button>
+            </form>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>
@@ -349,8 +441,11 @@ export default function ProductsList() {
               </span>
               <select
                 className="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                value={stagedSortBy}
+                onChange={(e) => {
+                  setStagedSortBy(e.target.value);
+                  setAppliedSortBy(e.target.value);
+                }}
               >
                 <option value="featured">✨ Featured</option>
                 <option value="price-low">💵 Price: Low to High</option>
@@ -360,25 +455,85 @@ export default function ProductsList() {
             </div>
           </div>
 
+          {/* Active Applied Filters Summary Bar */}
+          {(appliedCategory !== "ALL" || appliedSearch || appliedMaxPrice < 600 || appliedVegOnly || appliedOnlyDeals) && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+                marginBottom: "16px",
+                background: "#f1f5f9",
+                padding: "10px 14px",
+                borderRadius: "10px"
+              }}
+            >
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#475569" }}>Active Filters:</span>
+
+              {appliedCategory !== "ALL" && (
+                <span className="hero-pill" style={{ fontSize: "11px", padding: "3px 10px", background: "white" }}>
+                  Category: {appliedCategory}
+                </span>
+              )}
+
+              {appliedSearch && (
+                <span className="hero-pill" style={{ fontSize: "11px", padding: "3px 10px", background: "white" }}>
+                  Keyword: "{appliedSearch}"
+                </span>
+              )}
+
+              {appliedMaxPrice < 600 && (
+                <span className="hero-pill" style={{ fontSize: "11px", padding: "3px 10px", background: "white" }}>
+                  Max: ₹{appliedMaxPrice}
+                </span>
+              )}
+
+              {appliedVegOnly && (
+                <span className="hero-pill" style={{ fontSize: "11px", padding: "3px 10px", background: "#dcfce7", color: "#166534" }}>
+                  🥦 Veg Only
+                </span>
+              )}
+
+              {appliedOnlyDeals && (
+                <span className="hero-pill" style={{ fontSize: "11px", padding: "3px 10px", background: "#fef3c7", color: "#92400e" }}>
+                  🏷️ On Sale
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#dc2626",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginLeft: "auto"
+                }}
+              >
+                Clear All ✕
+              </button>
+            </div>
+          )}
+
           {/* Grid */}
           {filteredProducts.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔍</div>
               <h3>No items match your filter criteria</h3>
               <p style={{ color: "#64748b" }}>
-                Try relaxing the price slider or resetting your active search keywords.
+                Try relaxing the price slider, changing categories, or resetting active search keywords.
               </p>
               <button
-                className="secondary-btn"
-                onClick={() => {
-                  setSelectedCategory("ALL");
-                  setSearchQuery("");
-                  setMaxPrice(600);
-                  setVegOnly(false);
-                  setOnlyDeals(false);
-                }}
+                type="button"
+                className="primary-btn"
+                style={{ marginTop: "12px" }}
+                onClick={handleResetFilters}
               >
-                Reset All Filters
+                🔄 Reset All Filters
               </button>
             </div>
           ) : (
@@ -397,9 +552,13 @@ export default function ProductsList() {
                     <div className="smart-img-wrap">
                       <img
                         className="smart-img"
-                        src={item.imageUrl}
+                        src={item.imageUrl || FALLBACK_IMG}
                         alt={item.name}
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = FALLBACK_IMG;
+                        }}
                       />
                     </div>
 
