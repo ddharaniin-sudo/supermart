@@ -16,6 +16,7 @@ export default function Register() {
     setLoading(true);
 
     try {
+      await api.post("/auth/register", form);
       const redirectParam = new URLSearchParams(window.location.search).get("redirect");
       showToast("🎉 Customer account created! Please sign in.");
       navigate(redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : "/login");
