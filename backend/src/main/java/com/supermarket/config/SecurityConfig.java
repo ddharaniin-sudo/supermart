@@ -56,11 +56,14 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+        // Use origin patterns to support wildcard subdomains (e.g. all Vercel preview URLs)
+        List<String> patterns = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.toList());
-        config.setAllowedOrigins(origins);
+        // Always allow all Vercel deployments (preview + production)
+        patterns.add("https://*.vercel.app");
+        config.setAllowedOriginPatterns(patterns);
 
         config.setAllowedMethods(List.of(
             "GET",
